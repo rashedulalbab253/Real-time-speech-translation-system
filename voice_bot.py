@@ -5,8 +5,9 @@ import pygame
 import threading
 import queue
 import time
+import customtkinter as ctk
 import tkinter as tk
-from tkinter import ttk, scrolledtext, messagebox, filedialog
+from tkinter import scrolledtext, messagebox, filedialog
 import logging
 import os
 from datetime import datetime
@@ -359,6 +360,9 @@ class GeminiVoiceBot:
                         lang_display = self.language_codes[self.current_language]["display"]
                         self.update_status_callback(f"✅ Ready for {lang_display}")
                 
+                # Brief pause to prevent CPU spike
+                time.sleep(0.1)
+                
             except Exception as e:
                 logger.error(f"Error in voice interaction: {e}")
                 time.sleep(1)  # Brief pause before retrying
@@ -420,192 +424,151 @@ class GeminiVoiceBot:
 
 class VoiceBotGUI:
     def __init__(self):
-        self.root = tk.Tk()
-        self.root.title("🤖 Gemini Voice Bot - English & Bengali")
-        self.root.geometry("1000x750")
-        self.root.configure(bg='#f8f9fa')
+        ctk.set_appearance_mode("dark")
+        ctk.set_default_color_theme("blue")
         
-        # Apply modern styling
-        self.setup_styles()
+        self.root = ctk.CTk()
+        self.root.title("🤖 Gemini Voice Bot - English & Bengali")
+        self.root.geometry("1000x800")
         
         self.voice_bot = None
         self.bot_thread = None
         self.setup_gui()
     
-    def setup_styles(self):
-        """Setup modern styling"""
-        try:
-            self.style = ttk.Style()
-            self.style.theme_use('clam')
-            
-            # Configure custom styles
-            self.style.configure('Title.TLabel', font=('Arial', 16, 'bold'))
-            self.style.configure('Heading.TLabel', font=('Arial', 12, 'bold'))
-            self.style.configure('Custom.TButton', font=('Arial', 10, 'bold'))
-        except Exception as e:
-            logger.warning(f"Could not setup custom styles: {e}")
-            # Use basic styling as fallback
-            self.style = ttk.Style()
-    
     def setup_gui(self):
         """Setup the GUI interface"""
         # Main title
-        title_frame = tk.Frame(self.root, bg='#f8f9fa')
-        title_frame.pack(fill="x", pady=10)
+        title_label = ctk.CTkLabel(self.root, text="🤖 Gemini Voice Bot", 
+                                  font=ctk.CTkFont(size=32, weight="bold"))
+        title_label.pack(pady=(25, 5))
         
-        title_label = tk.Label(title_frame, text="🤖 Gemini Voice Bot", 
-                              font=("Arial", 24, "bold"), bg='#f8f9fa', fg='#2c3e50')
-        title_label.pack()
+        subtitle_label = ctk.CTkLabel(self.root, text="Intelligent Assistant with English & Bengali Support", 
+                                     font=ctk.CTkFont(size=14), text_color="#94a3b8")
+        subtitle_label.pack(pady=(0, 20))
         
-        subtitle_label = tk.Label(title_frame, text="Intelligent Voice Assistant with English & Bengali Support", 
-                                 font=("Arial", 12), bg='#f8f9fa', fg='#7f8c8d')
-        subtitle_label.pack()
+        # Main container with two columns
+        main_container = ctk.CTkFrame(self.root, fg_color="transparent")
+        main_container.pack(fill="both", expand=True, padx=30, pady=10)
         
-        # Configuration Frame
-        config_frame = ttk.LabelFrame(self.root, text="🔧 Configuration", padding=15)
-        config_frame.pack(fill="x", padx=20, pady=10)
+        # Left Panel: Configuration & Controls (35% width)
+        left_panel = ctk.CTkFrame(main_container, width=320)
+        left_panel.pack(side="left", fill="both", padx=(0, 15))
+        left_panel.pack_propagate(False)
         
-        # API Key input
-        tk.Label(config_frame, text="Gemini API Key:", font=("Arial", 11, "bold")).pack(anchor="w")
-        self.api_key_entry = tk.Entry(config_frame, width=70, show="*", font=("Arial", 10))
-        self.api_key_entry.pack(fill="x", pady=(5, 10))
+        # Config Section
+        ctk.CTkLabel(left_panel, text="Settings", font=ctk.CTkFont(size=18, weight="bold")).pack(pady=(20, 15))
         
-        # Initialize button
-        self.init_btn = tk.Button(config_frame, text="🚀 Initialize Voice Bot", 
-                                 command=self.initialize_bot,
-                                 bg='#3498db', fg='white', font=("Arial", 11, "bold"),
-                                 cursor='hand2', padx=15, pady=5)
-        self.init_btn.pack()
+        ctk.CTkLabel(left_panel, text="Gemini API Key:", font=ctk.CTkFont(size=13)).pack(anchor="w", padx=20)
+        self.api_key_entry = ctk.CTkEntry(left_panel, show="*", placeholder_text="Enter API Key...")
+        self.api_key_entry.pack(fill="x", padx=20, pady=(5, 15))
         
-        # Control Frame
-        control_frame = ttk.LabelFrame(self.root, text="🎛️ Controls", padding=15)
-        control_frame.pack(fill="x", padx=20, pady=10)
+        self.init_btn = ctk.CTkButton(left_panel, text="Initialize Bot", 
+                                     command=self.initialize_bot,
+                                     fg_color="#3498db", hover_color="#2980b9", font=ctk.CTkFont(weight="bold"))
+        self.init_btn.pack(pady=10, padx=20, fill="x")
         
-        # Language selection
-        lang_frame = tk.Frame(control_frame)
-        lang_frame.pack(fill="x", pady=(0, 10))
+        # Divider
+        ctk.CTkFrame(left_panel, height=2, fg_color="#334155").pack(fill="x", padx=20, pady=20)
         
-        tk.Label(lang_frame, text="🌐 Language:", font=("Arial", 11, "bold")).pack(side="left")
+        # Controls Section
+        ctk.CTkLabel(left_panel, text="Controls", font=ctk.CTkFont(size=18, weight="bold")).pack(pady=(0, 15))
         
+        ctk.CTkLabel(left_panel, text="Select Language:", font=ctk.CTkFont(size=13)).pack(anchor="w", padx=20)
         self.language_var = tk.StringVar(value="english")
-        self.english_radio = tk.Radiobutton(lang_frame, text="🇺🇸 English", 
-                                           variable=self.language_var, value="english",
-                                           command=self.change_language, state='disabled',
-                                           font=("Arial", 10))
+        
+        lang_switch_frame = ctk.CTkFrame(left_panel, fg_color="transparent")
+        lang_switch_frame.pack(pady=10, padx=20, fill="x")
+        
+        self.english_radio = ctk.CTkRadioButton(lang_switch_frame, text="🇺🇸 English", 
+                                               variable=self.language_var, value="english",
+                                               command=self.change_language, state='disabled')
         self.english_radio.pack(side="left", padx=10)
         
-        self.bengali_radio = tk.Radiobutton(lang_frame, text="🇧🇩 Bengali", 
-                                           variable=self.language_var, value="bengali",
-                                           command=self.change_language, state='disabled',
-                                           font=("Arial", 10))
+        self.bengali_radio = ctk.CTkRadioButton(lang_switch_frame, text="🇧🇩 Bengali", 
+                                               variable=self.language_var, value="bengali",
+                                               command=self.change_language, state='disabled')
         self.bengali_radio.pack(side="left", padx=10)
         
-        # Main control buttons
-        button_frame = tk.Frame(control_frame)
-        button_frame.pack(fill="x", pady=10)
+        self.listen_btn = ctk.CTkButton(left_panel, text="Start Listening", 
+                                       command=self.toggle_listening,
+                                       fg_color="#27ae60", hover_color="#219653", 
+                                       state='disabled', font=ctk.CTkFont(weight="bold"), height=45)
+        self.listen_btn.pack(pady=15, padx=20, fill="x")
         
-        self.listen_btn = tk.Button(button_frame, text="🎤 Start Listening", 
-                                   command=self.toggle_listening,
-                                   bg='#27ae60', fg='white', font=("Arial", 12, "bold"),
-                                   state='disabled', cursor='hand2', 
-                                   padx=10, pady=5)
-        self.listen_btn.pack(side="left", padx=5)
+        self.stop_btn = ctk.CTkButton(left_panel, text="Stop Bot", 
+                                     command=self.stop_bot,
+                                     fg_color="#e74c3c", hover_color="#c0392b", 
+                                     state='disabled', height=40)
+        self.stop_btn.pack(pady=5, padx=20, fill="x")
         
-        self.stop_btn = tk.Button(button_frame, text="⏹️ Stop", 
-                                 command=self.stop_bot,
-                                 bg='#e74c3c', fg='white', font=("Arial", 12, "bold"),
-                                 state='disabled', cursor='hand2',
-                                 padx=10, pady=5)
-        self.stop_btn.pack(side="left", padx=5)
+        # Status Section at bottom of left panel
+        status_frame = ctk.CTkFrame(left_panel, fg_color="#1e293b", corner_radius=10)
+        status_frame.pack(side="bottom", fill="x", padx=15, pady=20)
         
-        # Status display
-        self.status_label = tk.Label(control_frame, text="Status: Not initialized ⏸️", 
-                                    font=("Arial", 11), fg='#e74c3c')
-        self.status_label.pack(pady=5)
+        self.status_label = ctk.CTkLabel(status_frame, text="Status: Not initialized", 
+                                        text_color="#94a3b8", font=ctk.CTkFont(size=12))
+        self.status_label.pack(pady=10)
         
-        # Conversation Display
-        conv_frame = ttk.LabelFrame(self.root, text="💬 Conversation", padding=15)
-        conv_frame.pack(fill="both", expand=True, padx=20, pady=10)
+        # Right Panel: Conversation (65% width)
+        right_panel = ctk.CTkFrame(main_container)
+        right_panel.pack(side="right", fill="both", expand=True)
         
         # Conversation text area
-        self.conversation_display = scrolledtext.ScrolledText(
-            conv_frame, height=15, font=("Consolas", 11), 
-            bg='#ffffff', fg='#2c3e50', wrap=tk.WORD
-        )
-        self.conversation_display.pack(fill="both", expand=True, pady=(0, 10))
+        self.conversation_display = ctk.CTkTextbox(right_panel, font=ctk.CTkFont("Consolas", size=14),
+                                                  fg_color="#0f172a", text_color="#f8fafc", spacing3=8)
+        self.conversation_display.pack(fill="both", expand=True, padx=15, pady=15)
         
         # File operations frame
-        file_frame = tk.Frame(conv_frame)
-        file_frame.pack(fill="x")
+        file_frame = ctk.CTkFrame(right_panel, fg_color="transparent")
+        file_frame.pack(fill="x", side="bottom", padx=15, pady=(0, 15))
         
-        self.save_btn = tk.Button(file_frame, text="💾 Save Conversation", 
-                                 command=self.save_conversation, state='disabled',
-                                 bg='#9b59b6', fg='white', font=("Arial", 10, "bold"),
-                                 cursor='hand2', padx=10, pady=3)
+        self.save_btn = ctk.CTkButton(file_frame, text="Save Chat", 
+                                     command=self.save_conversation, state='disabled',
+                                     fg_color="#9b59b6", hover_color="#8e44ad", width=100)
         self.save_btn.pack(side="left", padx=5)
         
-        self.load_btn = tk.Button(file_frame, text="📂 Load Conversation", 
-                                 command=self.load_conversation, state='disabled',
-                                 bg='#f39c12', fg='white', font=("Arial", 10, "bold"),
-                                 cursor='hand2', padx=10, pady=3)
+        self.load_btn = ctk.CTkButton(file_frame, text="Load History", 
+                                     command=self.load_conversation, state='disabled',
+                                     fg_color="#f39c12", hover_color="#d35400", width=100)
         self.load_btn.pack(side="left", padx=5)
         
-        self.clear_btn = tk.Button(file_frame, text="🗑️ Clear Display", 
-                                  command=self.clear_display, state='disabled',
-                                  bg='#95a5a6', fg='white', font=("Arial", 10, "bold"),
-                                  cursor='hand2', padx=10, pady=3)
-        self.clear_btn.pack(side="left", padx=5)
-        
-        # Instructions
-        instructions_frame = tk.Frame(self.root, bg='#ecf0f1')
-        instructions_frame.pack(fill="x", padx=20, pady=(0, 10))
-        
-        instructions_text = """
-📖 Instructions:
-1. Enter your Gemini API key and click 'Initialize Voice Bot'
-2. Select your preferred language (English or Bengali)
-3. Click 'Start Listening' and speak your question clearly
-4. The bot will respond with voice and text
-5. You can save/load conversations and switch languages anytime
-        """
-        
-        tk.Label(instructions_frame, text=instructions_text, justify="left", 
-                font=("Arial", 10), bg='#ecf0f1', fg='#2c3e50').pack(pady=10)
+        self.clear_btn = ctk.CTkButton(file_frame, text="Clear chat", 
+                                      command=self.clear_display, state='disabled',
+                                      fg_color="#475569", hover_color="#334155", width=100)
+        self.clear_btn.pack(side="right", padx=5)
     
     def initialize_bot(self):
         """Initialize the voice bot"""
         api_key = self.api_key_entry.get().strip()
         if not api_key:
-            messagebox.showerror("❌ Error", "Please enter your Gemini API key")
+            messagebox.showerror("Error", "Please enter your Gemini API key")
             return
         
         try:
-            # Show loading
-            self.init_btn.config(text="🔄 Initializing...", state='disabled')
+            self.init_btn.configure(text="Initializing...", state='disabled')
             self.root.update()
             
-            # Initialize bot
             self.voice_bot = GeminiVoiceBot(api_key)
             self.voice_bot.update_conversation_callback = self.update_conversation_display
             self.voice_bot.update_status_callback = self.update_status
             
             # Enable controls
-            self.listen_btn.config(state='normal')
-            self.stop_btn.config(state='normal')
-            self.save_btn.config(state='normal')
-            self.load_btn.config(state='normal')
-            self.clear_btn.config(state='normal')
-            self.english_radio.config(state='normal')
-            self.bengali_radio.config(state='normal')
+            self.listen_btn.configure(state='normal')
+            self.stop_btn.configure(state='normal')
+            self.save_btn.configure(state='normal')
+            self.load_btn.configure(state='normal')
+            self.clear_btn.configure(state='normal')
+            self.english_radio.configure(state='normal')
+            self.bengali_radio.configure(state='normal')
             
-            self.init_btn.config(text="✅ Initialized", bg='#27ae60')
-            self.status_label.config(text="Status: Ready to chat! 🤖", fg='#27ae60')
+            self.init_btn.configure(text="Bot Initialized", fg_color="#27ae60")
+            self.status_label.configure(text="Status: Ready to talk! 🤖", text_color="#2ecc71")
             
-            messagebox.showinfo("✅ Success", "Voice bot initialized successfully!\nYou can now start chatting.")
+            messagebox.showinfo("Success", "Voice Bot initialized successfully!")
             
         except Exception as e:
-            self.init_btn.config(text="🚀 Initialize Voice Bot", state='normal', bg='#3498db')
-            messagebox.showerror("❌ Error", f"Failed to initialize voice bot:\n{str(e)}")
+            self.init_btn.configure(text="Initialize Bot", state='normal', fg_color="#3498db")
+            messagebox.showerror("Error", f"Failed to initialize voice bot: {str(e)}")
     
     def toggle_listening(self):
         """Toggle listening state"""
@@ -613,25 +576,20 @@ class VoiceBotGUI:
             return
         
         if not self.voice_bot.is_listening:
-            # Start listening
             self.voice_bot.start_listening()
-            self.listen_btn.config(text="⏸️ Stop Listening", bg='#e74c3c')
-            
-            # Start bot thread
+            self.listen_btn.configure(text="Stop Listening", fg_color="#e74c3c", hover_color="#c0392b")
             self.bot_thread = threading.Thread(target=self.voice_bot.process_voice_interaction, daemon=True)
             self.bot_thread.start()
-            
         else:
-            # Stop listening
             self.voice_bot.stop_listening()
-            self.listen_btn.config(text="🎤 Start Listening", bg='#27ae60')
+            self.listen_btn.configure(text="Start Listening", fg_color="#27ae60", hover_color="#219653")
     
     def stop_bot(self):
         """Stop the voice bot completely"""
         if self.voice_bot:
             self.voice_bot.stop()
-            self.listen_btn.config(text="🎤 Start Listening", bg='#27ae60')
-            self.status_label.config(text="Status: Stopped ⏹️", fg='#e74c3c')
+            self.listen_btn.configure(text="Start Listening", fg_color="#27ae60", hover_color="#219653")
+            self.status_label.configure(text="Status: Stopped ⏸️", text_color="#94a3b8")
     
     def change_language(self):
         """Change the bot language"""
@@ -639,23 +597,23 @@ class VoiceBotGUI:
             language = self.language_var.get()
             self.voice_bot.set_language(language)
             lang_display = self.voice_bot.language_codes[language]["display"]
-            self.status_label.config(text=f"Status: Language changed to {lang_display} 🌐", fg='#3498db')
+            self.update_status(f"Ready for {lang_display} 🌐")
     
     def update_status(self, status_text):
         """Update the status label"""
         if hasattr(self, 'status_label'):
-            self.status_label.config(text=f"Status: {status_text}", fg='#2980b9')
+            self.status_label.configure(text=f"Status: {status_text}", text_color="#3498db")
     
     def update_conversation_display(self, text):
         """Update the conversation display"""
-        self.conversation_display.insert(tk.END, text)
-        self.conversation_display.see(tk.END)
+        self.conversation_display.insert("end", text)
+        self.conversation_display.see("end")
         self.root.update_idletasks()
     
     def save_conversation(self):
         """Save conversation to file"""
         if not self.voice_bot or not self.voice_bot.conversation_history:
-            messagebox.showinfo("ℹ️ Info", "No conversation to save")
+            messagebox.showinfo("Info", "No conversation to save")
             return
         
         filename = filedialog.asksaveasfilename(
@@ -667,7 +625,7 @@ class VoiceBotGUI:
         if filename:
             saved_file = self.voice_bot.save_conversation(filename)
             if saved_file:
-                messagebox.showinfo("✅ Success", f"Conversation saved to:\n{saved_file}")
+                messagebox.showinfo("Success", f"Conversation saved to file.")
     
     def load_conversation(self):
         """Load conversation from file"""
@@ -680,22 +638,19 @@ class VoiceBotGUI:
         )
         
         if filename and self.voice_bot.load_conversation(filename):
-            # Display loaded conversation
             self.clear_display()
             for exchange in self.voice_bot.conversation_history:
-                timestamp = exchange.get('timestamp', 'Unknown')[:19]  # Format timestamp
+                timestamp = exchange.get('timestamp', 'Unknown')[11:19]
                 user_msg = exchange.get('user', '')
                 bot_msg = exchange.get('assistant', '')
-                language = exchange.get('language', 'unknown')
-                
-                self.update_conversation_display(f"[{timestamp}] [{language.title()}] You: {user_msg}\n")
-                self.update_conversation_display(f"[{timestamp}] [{language.title()}] Bot: {bot_msg}\n\n")
-            
-            messagebox.showinfo("✅ Success", f"Conversation loaded from:\n{filename}")
+                lang = exchange.get('language', 'unknown')
+                self.update_conversation_display(f"[{timestamp}] YOU ({lang}): {user_msg}\n")
+                self.update_conversation_display(f"[{timestamp}] BOT: {bot_msg}\n\n")
+            messagebox.showinfo("Success", f"Conversation loaded.")
     
     def clear_display(self):
         """Clear the conversation display"""
-        self.conversation_display.delete(1.0, tk.END)
+        self.conversation_display.delete('1.0', "end")
         if self.voice_bot:
             self.voice_bot.clear_conversation()
     
@@ -703,6 +658,12 @@ class VoiceBotGUI:
         """Handle window closing"""
         if self.voice_bot:
             self.voice_bot.stop()
+        self.root.destroy()
+    
+    def run(self):
+        """Run the GUI application"""
+        self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
+        self.root.mainloop()           self.voice_bot.stop()
         self.root.destroy()
     
     def run(self):
