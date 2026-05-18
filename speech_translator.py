@@ -12,6 +12,7 @@ import logging
 import os
 from datetime import datetime
 import json
+from typing import Optional, Any
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -21,6 +22,21 @@ class SpeechTranslator:
     def __init__(self, api_key):
         """Initialize the Speech Translator with Gemini API"""
         self.api_key = api_key
+        
+        # Initialize attributes for type checkers
+        self.model: Any = None
+        self.recognizer: Any = None
+        self.microphone: Any = None
+        self.microphones: list = []
+        self.min_speech_duration: float = 0.5
+        self.max_speech_duration: float = 30.0
+        self.silence_threshold: float = 1.0
+        self.tts_english: Any = None
+        self.tts_bengali: Any = None
+        self.use_google_tts_for_bengali: bool = True
+        self.update_gui_callback: Any = None
+        self.update_status_callback: Any = None
+        
         self.setup_gemini()
         self.setup_speech_recognition()
         self.setup_tts()
@@ -164,7 +180,7 @@ class SpeechTranslator:
                 error_str = str(e).lower()
                 if "quota" in error_str or "429" in error_str or "exhaust" in error_str or "retry_delay" in error_str:
                     logger.warning(f"Rate limit hit! Waiting 60s before retry ({attempt + 1}/{max_retries})...")
-                    if hasattr(self, 'update_status_callback'):
+                    if self.update_status_callback:
                         self.update_status_callback(f"⚠️ Rate limited. Pausing 60s... ({attempt + 1}/{max_retries})")
                     time.sleep(60)
                     continue
@@ -291,13 +307,13 @@ class SpeechTranslator:
         while self.is_running:
             if self.is_listening_english:
                 # Update GUI to show listening state
-                if hasattr(self, 'update_status_callback'):
+                if self.update_status_callback:
                     self.update_status_callback("🎤 Listening for English...")
                 
                 text = self.listen_and_recognize("en-US")
                 if text and len(text.strip()) > 1:
                     # Update GUI to show processing state
-                    if hasattr(self, 'update_status_callback'):
+                    if self.update_status_callback:
                         self.update_status_callback("🔄 Translating...")
                     
                     # Add to history
@@ -317,7 +333,7 @@ class SpeechTranslator:
                     self.translation_history[-1]['translated'] = translated
                     
                     # Update GUI to show speaking state
-                    if hasattr(self, 'update_status_callback'):
+                    if self.update_status_callback:
                         self.update_status_callback("🔊 Speaking Bengali...")
                     
                     # Speak in Bengali
@@ -327,10 +343,10 @@ class SpeechTranslator:
                     self.update_gui_callback(f"[{timestamp}] EN: {text}\n[{timestamp}] BN: {translated}\n\n")
                     
                     # Reset status
-                    if hasattr(self, 'update_status_callback'):
+                    if self.update_status_callback:
                         self.update_status_callback("✅ Ready for English...")
             else:
-                if hasattr(self, 'update_status_callback'):
+                if self.update_status_callback:
                     self.update_status_callback("⏸️ English listening paused")
             
             time.sleep(0.1)
@@ -340,13 +356,13 @@ class SpeechTranslator:
         while self.is_running:
             if self.is_listening_bengali:
                 # Update GUI to show listening state
-                if hasattr(self, 'update_status_callback'):
+                if self.update_status_callback:
                     self.update_status_callback("🎤 Listening for Bengali...")
                 
                 text = self.listen_and_recognize("bn-BD")
                 if text and len(text.strip()) > 1:
                     # Update GUI to show processing state
-                    if hasattr(self, 'update_status_callback'):
+                    if self.update_status_callback:
                         self.update_status_callback("🔄 Translating...")
                     
                     # Add to history
@@ -366,7 +382,7 @@ class SpeechTranslator:
                     self.translation_history[-1]['translated'] = translated
                     
                     # Update GUI to show speaking state
-                    if hasattr(self, 'update_status_callback'):
+                    if self.update_status_callback:
                         self.update_status_callback("🔊 Speaking English...")
                     
                     # Speak in English
@@ -376,10 +392,10 @@ class SpeechTranslator:
                     self.update_gui_callback(f"[{timestamp}] BN: {text}\n[{timestamp}] EN: {translated}\n\n")
                     
                     # Reset status
-                    if hasattr(self, 'update_status_callback'):
+                    if self.update_status_callback:
                         self.update_status_callback("✅ Ready for Bengali...")
             else:
-                if hasattr(self, 'update_status_callback'):
+                if self.update_status_callback:
                     self.update_status_callback("⏸️ Bengali listening paused")
             
             time.sleep(0.1)
@@ -441,7 +457,22 @@ class TranslatorGUI:
         self.root.title("Real-time Speech Translator (English ↔ Bengali)")
         self.root.geometry("900x700")
         
-        self.translator = None
+        self.translator: Any = None
+        
+        # UI Elements
+        self.api_key_entry: Any = None
+        self.initialize_btn: Any = None
+        self.en_listen_btn: Any = None
+        self.bn_listen_btn: Any = None
+        self.status_label: Any = None
+        self.translation_display: Any = None
+        self.save_btn: Any = None
+        self.clear_btn: Any = None
+        
+        # Threads
+        self.en_thread: Any = None
+        self.bn_thread: Any = None
+        
         self.setup_gui()
     
     def setup_gui(self):
