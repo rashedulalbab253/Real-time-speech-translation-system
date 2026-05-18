@@ -663,12 +663,6 @@ class VoiceBotGUI:
     def run(self):
         """Run the GUI application"""
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
-        self.root.mainloop()           self.voice_bot.stop()
-        self.root.destroy()
-    
-    def run(self):
-        """Run the GUI application"""
-        self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
         self.root.mainloop()
 
 
