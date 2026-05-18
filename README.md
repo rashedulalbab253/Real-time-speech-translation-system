@@ -1,4 +1,4 @@
-# 🎙️ Bengali-English Speech Translation Suite
+# 🎙️ Bengali-English Speech Translation System
 
 A professional, real-time bidirectional speech translation and conversational AI assistant system designed for video calls, meetings, and personal assistance.
 
